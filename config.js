@@ -1,11 +1,11 @@
 import 'dotenv/config';
-const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.', '!', '/', '#'];
+const _prefixes = process.env.PREFIXES ? process.env.PREFIXES.split(',') : ['.'];
 const config = {
     // Bot Identity
-    botName: process.env.BOT_NAME || 'MEGA-MD',
-    botOwner: process.env.BOT_OWNER || 'Qasim Ali',
-    ownerNumber: process.env.OWNER_NUMBER || '923051391005',
-    author: process.env.AUTHOR || 'GlobalTechInfo',
+    botName: process.env.BOT_NAME || 'SHAZAM',
+    botOwner: process.env.BOT_OWNER || 'Soul Destructor',
+    ownerNumber: process.env.OWNER_NUMBER || '41784613783',
+    author: process.env.AUTHOR || 'AVENGERS',
     packname: process.env.PACKNAME || 'MEGA-MD',
     description: process.env.DESCRIPTION || 'High performance multi-device WhatsApp bot',
     version: '6.0.0',
