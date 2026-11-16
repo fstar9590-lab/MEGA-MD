@@ -1,4 +1,5 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+
 export default {
     command: 'viewonce',
     aliases: ['viewmedia', 'vv'],
@@ -9,9 +10,12 @@ export default {
         const chatId = context.chatId || message.key.remoteJid;
         try {
             const quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-            const quotedImage = quoted?.imageMessage;
-            const quotedVideo = quoted?.videoMessage;
-            if (quotedImage && quotedImage.viewOnce) {
+            const viewOnceMsg = quoted?.viewOnceMessageV2?.message || quoted?.viewOnceMessage?.message || quoted;
+            const quotedImage = viewOnceMsg?.imageMessage;
+            const quotedVideo = viewOnceMsg?.videoMessage;
+            const isViewOnce = quoted?.viewOnceMessageV2 || quoted?.viewOnceMessage || quotedImage?.viewOnce || quotedVideo?.viewOnce;
+
+            if (quotedImage && isViewOnce) {
                 const stream = await downloadContentFromMessage(quotedImage, 'image');
                 let buffer = Buffer.from([]);
                 for await (const chunk of stream)
@@ -22,7 +26,7 @@ export default {
                     caption: quotedImage.caption || ''
                 }, { quoted: message });
             }
-            else if (quotedVideo && quotedVideo.viewOnce) {
+            else if (quotedVideo && isViewOnce) {
                 const stream = await downloadContentFromMessage(quotedVideo, 'video');
                 let buffer = Buffer.from([]);
                 for await (const chunk of stream)
