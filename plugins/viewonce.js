@@ -9,7 +9,9 @@ export default {
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
         try {
-            const quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+            const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+            const rawQuoted = (contextInfo?.stanzaId && global.msgCache?.get(contextInfo.stanzaId)) || contextInfo?.quotedMessage;
+            const quoted = rawQuoted?.ephemeralMessage?.message || rawQuoted;
             const viewOnceMsg = quoted?.viewOnceMessageV2?.message || quoted?.viewOnceMessage?.message || quoted;
             const quotedImage = viewOnceMsg?.imageMessage;
             const quotedVideo = viewOnceMsg?.videoMessage;
