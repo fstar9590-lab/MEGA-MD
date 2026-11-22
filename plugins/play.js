@@ -13,34 +13,35 @@ export default {
 
     async handler(sock, message, args, context) {
         const chatId = context.chatId || message.key.remoteJid;
-        const query = args.join(' ').trim();
+        const query = args?.join(' ')?.trim();
 
         if (!query) {
             return sock.sendMessage(chatId, {
-                text: '*Which song do you want to play?*\nUsage: .play <song name>'
+                text: '*🎵 Which song do you want?*\n\nUsage: .play <song name>'
             }, { quoted: message });
         }
 
         try {
             await sock.sendMessage(chatId, {
-                text: '🔍 *Searching YouTube...*'
+                text: '🔍 Searching YouTube...'
             }, { quoted: message });
 
             const { videos } = await yts(query);
 
             if (!videos?.length) {
                 return sock.sendMessage(chatId, {
-                    text: '❌ *No results found!*'
+                    text: '❌ No results found!'
                 }, { quoted: message });
             }
 
             const video = videos[0];
 
             await sock.sendMessage(chatId, {
-                text: `✅ *Found:* ${video.title}\n` +
-                    `⏱️ ${video.timestamp}\n` +
-                    `👤 ${video.author.name}\n\n` +
-                    '⏳ *Downloading MP3...*'
+                text:
+                    `🎵 *${video.title}*\n\n` +
+                    `👤 ${video.author.name}\n` +
+                    `⏱️ ${video.timestamp}\n\n` +
+                    '⬇️ Downloading MP3...'
             }, { quoted: message });
 
             const { data } = await axios.get(DL_API, {
@@ -51,29 +52,45 @@ export default {
             const song = data?.mediaInfo;
 
             if (!data?.success || !song?.audioUrl) {
-                throw new Error('API did not return an audio URL');
+                throw new Error('Audio download URL unavailable');
             }
 
+            // Download the actual audio file
+            const audioResponse = await axios.get(song.audioUrl, {
+                responseType: 'arraybuffer',
+                timeout: 90000,
+                maxContentLength: 25 * 1024 * 1024,
+                maxBodyLength: 25 * 1024 * 1024
+            });
+
+            const audioBuffer = Buffer.from(audioResponse.data);
+
+            if (!audioBuffer.length) {
+                throw new Error('Downloaded audio is empty');
+            }
+
+            const title = (song.title || video.title)
+                .replace(/[\\/:*?"<>|]/g, '')
+                .slice(0, 100);
+
+            // Send as regular audio, NOT a voice note
             await sock.sendMessage(chatId, {
-                audio: { url: song.audioUrl },
+                audio: audioBuffer,
                 mimetype: 'audio/mpeg',
-                fileName: `${song.title || video.title}.mp3`,
-                contextInfo: {
-                    externalAdReply: {
-                        title: song.title || video.title,
-                        body: song.author || video.author.name,
-                        thumbnailUrl: song.thumbnail || video.thumbnail,
-                        mediaType: 2,
-                        sourceUrl: video.url
-                    }
-                }
-            }, { quoted: message });
+                fileName: `${title}.mp3`,
+                ptt: false
+            }, {
+                quoted: message
+            });
 
         } catch (err) {
-            console.error('Play error:', err.response?.data || err.message);
+            console.error(
+                '[PLAY ERROR]',
+                err.response?.data || err.message
+            );
 
             await sock.sendMessage(chatId, {
-                text: `❌ *Play Failed*\n\n${err.response?.data?.message || err.message}`
+                text: `❌ *Play Failed*\n\n${err.message}`
             }, { quoted: message });
         }
     }
